@@ -3,442 +3,620 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>macOS Web Sim</title>
+    <title>macOS Monterey</title>
     <style>
-        /* CSS VARIABLES & RESET */
+        /* --- RESET & VARIABLES --- */
         :root {
-            --bg-glass: rgba(255, 255, 255, 0.65);
-            --bg-glass-dark: rgba(0, 0, 0, 0.5);
-            --shadow-lg: 0 20px 50px rgba(0,0,0,0.3);
-            --radius-lg: 14px;
-            --radius-md: 10px;
+            --bg-glass: rgba(255, 255, 255, 0.75);
+            --bg-glass-sidebar: rgba(245, 245, 245, 0.85);
+            --bg-glass-dark: rgba(28, 28, 30, 0.65);
+            --dock-bg: rgba(255, 255, 255, 0.2);
+            --shadow-lg: 0 25px 60px rgba(0,0,0,0.4);
+            --shadow-sm: 0 5px 15px rgba(0,0,0,0.2);
+            --accent-blue: #007AFF;
+            --system-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
         }
 
-        * {
-            box-sizing: border-box;
-            user-select: none; /* Prevent text highlighting */
-        }
-
+        * { box-sizing: border-box; user-select: none; -webkit-user-drag: none; cursor: default; }
+        
         body {
             margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             overflow: hidden;
             height: 100vh;
-            width: 100vw;
-            /* Iconic macOS Gradient Wallpaper */
-            background: linear-gradient(125deg, #FF9A9E 0%, #FECFEF 20%, #A18CD1 40%, #FBC2EB 60%, #8FD3F4 80%, #84fab0 100%);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
+            font-family: var(--system-font);
+            /* High Res Monterey Wallpaper */
+            background: url('https://4kwallpapers.com/images/wallpapers/macos-monterey-stock-purple-dark-mode-layers-5k-4480x2520-5889.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #333;
         }
 
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* --- MENU BAR --- */
-        .menubar {
-            position: absolute;
-            top: 0;
-            width: 100%;
-            height: 28px;
-            background: var(--bg-glass);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
+        /* --- BOOT SCREEN --- */
+        #boot-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 99999;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: center;
-            padding: 0 20px;
-            font-size: 13px;
-            font-weight: 500;
-            z-index: 1000;
-            color: #222;
+            justify-content: center;
+            transition: opacity 1s ease;
+        }
+        .boot-logo { color: white; font-size: 80px; margin-bottom: 40px; }
+        .progress-bar {
+            width: 200px; height: 6px; background: #333; border-radius: 10px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; width: 0%; background: #fff; border-radius: 10px;
+            transition: width 3s ease-in-out;
         }
 
-        .menubar-left span, .menubar-right span {
-            margin: 0 10px;
-            cursor: default;
+        /* --- MENUBAR --- */
+        .menubar {
+            position: absolute; top: 0; width: 100%; height: 30px;
+            background: rgba(255, 255, 255, 0.3); /* Transparent styling */
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 18px; color: white; font-size: 13.5px; font-weight: 500;
+            z-index: 5000; text-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
 
-        .apple-logo {
-            font-weight: 700;
-        }
+        .menu-left, .menu-right { display: flex; align-items: center; height: 100%; }
+        .menu-item { padding: 0 10px; height: 100%; display: flex; align-items: center; border-radius: 4px; }
+        .menu-item:hover { background: rgba(255,255,255,0.2); }
+        .apple-logo { font-size: 16px; font-weight: 600; padding-bottom: 3px;}
+        .app-name { font-weight: 700; }
 
-        /* --- WINDOWS --- */
+        /* Dropdowns */
+        .dropdown {
+            position: absolute; top: 30px; left: 10px;
+            width: 240px; background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(25px); border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 6px; display: none; color: black; border: 1px solid rgba(0,0,0,0.1);
+        }
+        .dropdown.show { display: block; }
+        .dd-item { padding: 4px 10px; border-radius: 5px; font-size: 13px; margin-bottom: 2px;}
+        .dd-item:hover { background: var(--accent-blue); color: white; }
+        .dd-divider { height: 1px; background: #ddd; margin: 4px 6px; }
+
+        /* Control Center */
+        .control-panel {
+            position: absolute; top: 35px; right: 10px; width: 320px;
+            background: rgba(240, 240, 240, 0.7); backdrop-filter: blur(40px);
+            border-radius: 14px; padding: 12px; display: none;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.2), var(--shadow-lg);
+            color: #000;
+        }
+        .control-panel.show { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .cp-block { background: rgba(255,255,255,1); border-radius: 10px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+        /* --- WINDOW SYSTEM --- */
         .window {
             position: absolute;
             background: #fff;
-            border-radius: var(--radius-lg);
+            border-radius: 12px;
             box-shadow: var(--shadow-lg);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            transition: transform 0.1s, opacity 0.2s;
-            opacity: 0;
-            transform: scale(0.95);
-            pointer-events: none; /* Hidden by default */
+            display: flex; flex-direction: column; overflow: hidden;
+            transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), opacity 0.2s, width 0.2s, height 0.2s;
+            opacity: 0; transform: scale(0.9); pointer-events: none;
+            border: 1px solid rgba(0,0,0,0.1);
         }
+        .window.active { opacity: 1; transform: scale(1); pointer-events: all; }
+        .window.minimized { opacity: 0; transform: scale(0) translate(0, 500px); pointer-events: none; }
+        .window.maximized { top: 30px !important; left: 0 !important; width: 100% !important; height: calc(100% - 30px) !important; border-radius: 0; }
 
-        .window.active {
-            opacity: 1;
-            transform: scale(1);
-            pointer-events: all;
-        }
-
+        /* Title Bar */
         .title-bar {
-            height: 30px;
-            background: #f0f0f0;
-            display: flex;
-            align-items: center;
-            padding-left: 12px;
-            border-bottom: 1px solid #ddd;
-            cursor: default; /* Fallback */
+            height: 38px; background: linear-gradient(to bottom, #efefef, #e6e6e6);
+            display: flex; align-items: center; padding-left: 14px;
+            border-bottom: 1px solid #d1d1d1;
         }
-
-        .controls {
-            display: flex;
-            gap: 8px;
-        }
-
-        .control {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-
-        .close { background: #ff5f56; border: 1px solid #e0443e; cursor: pointer;}
-        .minimize { background: #ffbd2e; border: 1px solid #dea123; }
-        .maximize { background: #27c93f; border: 1px solid #1aab29; }
-
-        .close:hover { background: #cc4c45; }
-
-        .window-content {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        /* Specific Windows */
-        #finder {
-            width: 600px;
-            height: 400px;
-            top: 100px;
-            left: 100px;
-        }
-
-        #safari {
-            width: 800px;
-            height: 500px;
-            top: 80px;
-            left: 150px;
-        }
-
-        #vscode {
-            width: 700px;
-            height: 450px;
-            top: 120px;
-            left: 200px;
-            background: #1e1e1e;
-            color: white;
-        }
+        .title-text { position: absolute; left: 0; width: 100%; text-align: center; font-weight: 600; color: #444; pointer-events: none; font-size: 13px;}
         
-        #vscode .title-bar { background: #2d2d2d; border-bottom: none; }
+        /* Traffic Lights */
+        .traffic-lights { display: flex; gap: 8px; z-index: 10; }
+        .light { width: 12px; height: 12px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size: 8px; font-weight:bold; color: rgba(0,0,0,0.5); opacity: 1;}
+        .close { background: #FF5F57; border: 1px solid #E0443E; }
+        .min { background: #FEBC2E; border: 1px solid #D89E24; }
+        .max { background: #28C840; border: 1px solid #1AAB29; }
+        
+        .traffic-lights:hover .light { color: rgba(0,0,0,0.6); }
+        .traffic-lights:hover .close::after { content: '×'; }
+        .traffic-lights:hover .min::after { content: '–'; }
+        .traffic-lights:hover .max::after { content: '+'; }
 
-        /* Safari Browser Bar Simulation */
-        .url-bar {
-            background: #ddd;
-            margin: 0 auto;
-            width: 80%;
-            padding: 5px 10px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 12px;
-            color: #555;
-            margin-bottom: 15px;
+        /* --- APPS UI --- */
+        /* Finder */
+        #finder { width: 750px; height: 450px; top: 100px; left: 150px; }
+        .finder-body { display: flex; height: 100%; }
+        .sidebar {
+            width: 180px; background: rgba(240, 240, 240, 0.9);
+            backdrop-filter: blur(15px); padding: 15px 10px;
+            font-size: 13px; color: #555; border-right: 1px solid #ddd;
         }
+        .sidebar-group { margin-bottom: 15px; font-weight: 600; color: #999; font-size: 11px; padding-left: 10px; }
+        .sidebar-item { padding: 5px 10px; border-radius: 5px; display: flex; align-items: center; gap: 8px; margin-bottom: 2px;}
+        .sidebar-item.active { background: #dcdcdc; color: #333; }
+        .main-content { flex: 1; padding: 20px; background: #fff; overflow-y: auto; }
+        .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 20px; }
+        .file { text-align: center; }
+        .file-icon { font-size: 50px; margin-bottom: 5px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.1)); }
+        .file-name { font-size: 12px; }
 
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: white;
+        /* Safari */
+        #safari { width: 850px; height: 550px; top: 80px; left: 200px; }
+        .safari-bar { display: flex; align-items: center; padding: 8px 15px; background: #f5f5f5; border-bottom: 1px solid #ddd; gap: 15px;}
+        .url-input { 
+            flex: 1; background: #e0e0e0; border-radius: 8px; padding: 6px; text-align: center; font-size: 12px; color: #333;
+            display: flex; align-items: center; justify-content: center; gap: 5px;
         }
+        .safari-content { flex: 1; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .safari-favs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px; margin-top: 20px; }
+        .fav-icon { width: 60px; height: 60px; background: #eee; border-radius: 14px; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 24px;}
+
+        /* Calculator */
+        #calculator { width: 232px; height: 320px; top: 150px; left: 400px; background: #323232; border-radius: 10px; }
+        #calculator .title-bar { background: #323232; border: none; }
+        #calculator .title-text { display: none; }
+        .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; padding: 1px; }
+        .calc-display { grid-column: span 4; height: 60px; color: white; font-size: 40px; text-align: right; padding: 10px; font-weight: 300; }
+        .calc-btn { height: 48px; border: none; font-size: 18px; border-radius: 0; cursor: default; }
+        .btn-grey { background: #5d5d5d; color: white; }
+        .btn-orange { background: #ff9f0a; color: white; }
+        .btn-dark { background: #424242; color: white; }
+        .calc-btn:active { opacity: 0.7; }
+
+        /* Terminal */
+        #terminal { width: 600px; height: 380px; top: 200px; left: 300px; background: rgba(0,0,0,0.95); color: #fff; font-family: 'Menlo', monospace; }
+        #terminal .title-bar { background: #2b2b2b; border-bottom: 1px solid #000; }
+        #terminal .title-text { color: #999; }
+        .term-content { padding: 10px; font-size: 12px; line-height: 1.5; }
+        .blink { animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
 
         /* --- DOCK --- */
         .dock-container {
-            position: absolute;
-            bottom: 10px;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            z-index: 1000;
+            position: absolute; bottom: 10px; width: 100%; display: flex; justify-content: center; z-index: 6000;
         }
-
         .dock {
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            padding: 8px;
-            display: flex;
-            gap: 12px;
-            align-items: flex-end;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
-            transition: width 0.2s;
+            background: var(--dock-bg);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 20px; padding: 5px 8px;
+            display: flex; gap: 8px; align-items: flex-end; height: 65px;
+            box-shadow: var(--shadow-sm);
         }
-
-        .app-icon {
-            width: 50px;
-            height: 50px;
-            background: #fff;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            position: relative;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        .dock-icon {
+            width: 50px; height: 50px; transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+            position: relative; cursor: pointer;
         }
-
-        /* Dock Hover Effects (Magnification simulation) */
-        .app-icon:hover {
-            transform: scale(1.2) translateY(-10px);
-            margin: 0 10px;
+        .dock-icon img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
+        
+        .dock-icon:hover { width: 70px; height: 70px; margin-bottom: 10px; margin-left: 5px; margin-right: 5px;}
+        
+        .dock-icon.active::after {
+            content: ''; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+            width: 4px; height: 4px; background: rgba(255,255,255,0.8); border-radius: 50%;
         }
         
-        /* Active dot indicator */
-        .app-icon.is-open::after {
-            content: '';
-            position: absolute;
-            bottom: -6px;
-            width: 4px;
-            height: 4px;
-            background: #333;
-            border-radius: 50%;
+        /* Tooltip */
+        .tooltip {
+            position: absolute; top: -40px; left: 50%; transform: translateX(-50%);
+            background: rgba(228, 228, 228, 0.9); padding: 4px 10px; border-radius: 5px;
+            font-size: 12px; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+            color: #333; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            white-space: nowrap;
         }
-
-        /* Icon Colors */
-        .icon-finder { background: linear-gradient(180deg, #1fa2ff, #12d8fa); }
-        .icon-safari { background: white; color: #22a4f4; }
-        .icon-vscode { background: #2c3e50; color: #3498db; }
-        .icon-photos { background: white; }
-
-        /* Draggable Handle Helper */
-        .drag-handle {
-            width: 100%;
-            height: 100%;
-        }
+        .dock-icon:hover .tooltip { opacity: 1; }
 
     </style>
 </head>
 <body>
 
-    <!-- Top Menu Bar -->
-    <div class="menubar">
-        <div class="menubar-left">
-            <span class="apple-logo"></span>
-            <span style="font-weight: 700;">Finder</span>
-            <span>File</span>
-            <span>Edit</span>
-            <span>View</span>
-            <span>Go</span>
-            <span>Window</span>
-            <span>Help</span>
+    <!-- BOOT SCREEN -->
+    <div id="boot-screen">
+        <div class="boot-logo"></div>
+        <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+    </div>
+
+    <!-- MENUBAR -->
+    <nav class="menubar">
+        <div class="menu-left">
+            <div class="menu-item apple-logo" onclick="toggleDropdown('apple-menu')"></div>
+            <div class="menu-item app-name" id="active-app-name">Finder</div>
+            <div class="menu-item">File</div>
+            <div class="menu-item">Edit</div>
+            <div class="menu-item">View</div>
+            <div class="menu-item">Go</div>
+            <div class="menu-item">Window</div>
+            <div class="menu-item">Help</div>
         </div>
-        <div class="menubar-right">
-            <span>🔋 100%</span>
-            <span>📶 Wi-Fi</span>
-            <span id="clock">12:00 AM</span>
+        <div class="menu-right">
+            <div class="menu-item">🔋 100%</div>
+            <div class="menu-item">📶</div>
+            <div class="menu-item" onclick="toggleControl()">🎛️</div>
+            <div class="menu-item" id="clock">Mon Jun 22 9:41 AM</div>
+        </div>
+    </nav>
+
+    <!-- MENUBAR DROPDOWNS -->
+    <div class="dropdown" id="apple-menu">
+        <div class="dd-item">About This Mac</div>
+        <div class="dd-divider"></div>
+        <div class="dd-item">System Preferences...</div>
+        <div class="dd-item">App Store...</div>
+        <div class="dd-divider"></div>
+        <div class="dd-item">Sleep</div>
+        <div class="dd-item">Restart...</div>
+        <div class="dd-item">Shut Down...</div>
+        <div class="dd-divider"></div>
+        <div class="dd-item">Lock Screen</div>
+    </div>
+
+    <div class="control-panel" id="control-panel">
+        <div class="cp-block" style="grid-column: span 1;">
+            <div style="font-weight:600; font-size:12px; margin-bottom:5px;">Wi-Fi</div>
+            <div style="color:var(--accent-blue); font-size:13px;">Home Network</div>
+        </div>
+        <div class="cp-block" style="grid-column: span 1;">
+            <div style="font-weight:600; font-size:12px; margin-bottom:5px;">Bluetooth</div>
+            <div style="font-size:13px;">On</div>
+        </div>
+        <div class="cp-block" style="grid-column: span 2;">
+            <div style="font-weight:600; font-size:12px; margin-bottom:5px;">Display</div>
+            <input type="range" style="width:100%;">
+        </div>
+        <div class="cp-block" style="grid-column: span 2;">
+            <div style="font-weight:600; font-size:12px; margin-bottom:5px;">Sound</div>
+            <input type="range" style="width:100%;">
         </div>
     </div>
 
-    <!-- Finder Window -->
-    <div class="window active" id="finder">
+    <!-- WINDOWS -->
+    
+    <!-- FINDER -->
+    <div class="window" id="finder" onclick="focusWindow(this)">
         <div class="title-bar" id="finder-header">
-            <div class="controls">
-                <div class="control close" onclick="closeWindow('finder')"></div>
-                <div class="control minimize"></div>
-                <div class="control maximize"></div>
+            <div class="traffic-lights">
+                <div class="light close" onclick="closeWindow('finder', event)"></div>
+                <div class="light min" onclick="minimizeWindow('finder', event)"></div>
+                <div class="light max" onclick="maximizeWindow('finder')"></div>
             </div>
-            <div class="drag-handle" style="position:absolute; left:0; top:0; width:100%; height:100%; z-index: -1;"></div>
+            <div class="title-text">Finder</div>
         </div>
-        <div class="window-content">
-            <h2 style="margin-top:0;">Desktop</h2>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
-                <div style="text-align: center;">
-                    <div style="font-size: 40px;">📂</div>
-                    <div style="font-size: 12px; margin-top:5px;">Documents</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 40px;">🖼️</div>
-                    <div style="font-size: 12px; margin-top:5px;">Images</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 40px;">🎵</div>
-                    <div style="font-size: 12px; margin-top:5px;">Music</div>
+        <div class="finder-body">
+            <div class="sidebar">
+                <div class="sidebar-group">Favorites</div>
+                <div class="sidebar-item active">🔵 AirDrop</div>
+                <div class="sidebar-item">🕒 Recents</div>
+                <div class="sidebar-item">🅰️ Applications</div>
+                <div class="sidebar-item">⬇️ Downloads</div>
+                <div class="sidebar-item">🖼️ Pictures</div>
+                <div class="sidebar-group" style="margin-top:10px;">iCloud</div>
+                <div class="sidebar-item">☁️ iCloud Drive</div>
+            </div>
+            <div class="main-content">
+                <div class="grid-view">
+                    <div class="file"><div class="file-icon">📁</div><div class="file-name">Work</div></div>
+                    <div class="file"><div class="file-icon">📁</div><div class="file-name">Photos</div></div>
+                    <div class="file"><div class="file-icon">📄</div><div class="file-name">Resume.pdf</div></div>
+                    <div class="file"><div class="file-icon">🎵</div><div class="file-name">Song.mp3</div></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Safari Window -->
-    <div class="window" id="safari">
+    <!-- SAFARI -->
+    <div class="window" id="safari" onclick="focusWindow(this)">
         <div class="title-bar" id="safari-header">
-            <div class="controls">
-                <div class="control close" onclick="closeWindow('safari')"></div>
-                <div class="control minimize"></div>
-                <div class="control maximize"></div>
+            <div class="traffic-lights">
+                <div class="light close" onclick="closeWindow('safari', event)"></div>
+                <div class="light min" onclick="minimizeWindow('safari', event)"></div>
+                <div class="light max" onclick="maximizeWindow('safari')"></div>
             </div>
         </div>
-        <div class="window-content" style="padding: 0; background: #fff; display:flex; flex-direction:column;">
-            <div style="background:#f0f0f0; padding: 10px;">
-                <div class="url-bar">🔒 apple.com</div>
-            </div>
-            <div style="flex:1; display:flex; justify-content:center; align-items:center; flex-direction:column;">
-                <h1 style="font-size: 50px;"></h1>
-                <h2>MacBook Pro</h2>
-                <p>Mind-blowing. Head-turning.</p>
-                <button style="background:#0071e3; color:white; border:none; padding:10px 20px; border-radius:20px;">Buy</button>
+        <div class="safari-bar">
+            <span>🔙</span> <span>🔜</span> <span>🛡️</span>
+            <div class="url-input">🔒 apple.com</div>
+        </div>
+        <div class="safari-content">
+            <h1 style="font-size:40px; font-weight:700; color:#333; margin-bottom:10px;">Safari</h1>
+            <div class="safari-favs">
+                <div class="fav"><div class="fav-icon" style="color:#E0443E;"></div><div style="text-align:center; font-size:12px;">Apple</div></div>
+                <div class="fav"><div class="fav-icon" style="color:#007AFF;">G</div><div style="text-align:center; font-size:12px;">Google</div></div>
+                <div class="fav"><div class="fav-icon" style="color:#28C840;">Y</div><div style="text-align:center; font-size:12px;">Yahoo</div></div>
+                <div class="fav"><div class="fav-icon" style="color:#FF9F0A;">W</div><div style="text-align:center; font-size:12px;">Wiki</div></div>
             </div>
         </div>
     </div>
 
-    <!-- VS Code Window -->
-    <div class="window" id="vscode">
-        <div class="title-bar" id="vscode-header">
-            <div class="controls">
-                <div class="control close" onclick="closeWindow('vscode')"></div>
-                <div class="control minimize"></div>
-                <div class="control maximize"></div>
+    <!-- TERMINAL -->
+    <div class="window" id="terminal" onclick="focusWindow(this)">
+        <div class="title-bar" id="terminal-header">
+            <div class="traffic-lights">
+                <div class="light close" onclick="closeWindow('terminal', event)"></div>
+                <div class="light min" onclick="minimizeWindow('terminal', event)"></div>
+                <div class="light max" onclick="maximizeWindow('terminal')"></div>
             </div>
+            <div class="title-text">user — -zsh — 80x24</div>
         </div>
-        <div class="window-content" style="font-family: 'Courier New', monospace;">
-            <p><span style="color: #c586c0;">function</span> <span style="color: #dcdcaa;">helloWorld</span>() {</p>
-            <p>&nbsp;&nbsp;<span style="color: #9cdcfe;">console</span>.<span style="color: #dcdcaa;">log</span>(<span style="color: #ce9178;">"Hello Mac User!"</span>);</p>
-            <p>}</p>
-            <p><span style="color: #6a9955;">// Ready to code...</span></p>
+        <div class="term-content">
+            <div>Last login: Today at 09:00:00 on ttys000</div>
+            <br>
+            <div>user@MacBook-Pro ~ % <span id="typewriter"></span><span class="blink">█</span></div>
         </div>
     </div>
 
-    <!-- Dock -->
+    <!-- CALCULATOR -->
+    <div class="window" id="calculator" onclick="focusWindow(this)">
+        <div class="title-bar" id="calc-header">
+            <div class="traffic-lights">
+                <div class="light close" onclick="closeWindow('calculator', event)"></div>
+                <div class="light min" onclick="minimizeWindow('calculator', event)"></div>
+                <div class="light max" style="background:#ccc; border:1px solid #aaa;"></div>
+            </div>
+        </div>
+        <div class="calc-grid">
+            <div class="calc-display" id="calc-res">0</div>
+            <button class="calc-btn btn-grey" onclick="calcInput('C')">AC</button>
+            <button class="calc-btn btn-grey">+/-</button>
+            <button class="calc-btn btn-grey">%</button>
+            <button class="calc-btn btn-orange" onclick="calcInput('/')">÷</button>
+            <button class="calc-btn btn-dark" onclick="calcInput(7)">7</button>
+            <button class="calc-btn btn-dark" onclick="calcInput(8)">8</button>
+            <button class="calc-btn btn-dark" onclick="calcInput(9)">9</button>
+            <button class="calc-btn btn-orange" onclick="calcInput('*')">×</button>
+            <button class="calc-btn btn-dark" onclick="calcInput(4)">4</button>
+            <button class="calc-btn btn-dark" onclick="calcInput(5)">5</button>
+            <button class="calc-btn btn-dark" onclick="calcInput(6)">6</button>
+            <button class="calc-btn btn-orange" onclick="calcInput('-')">-</button>
+            <button class="calc-btn btn-dark" onclick="calcInput(1)">1</button>
+            <button class="calc-btn btn-dark" onclick="calcInput(2)">2</button>
+            <button class="calc-btn btn-dark" onclick="calcInput(3)">3</button>
+            <button class="calc-btn btn-orange" onclick="calcInput('+')">+</button>
+            <button class="calc-btn btn-dark" style="grid-column: span 2; border-bottom-left-radius: 10px;" onclick="calcInput(0)">0</button>
+            <button class="calc-btn btn-dark">.</button>
+            <button class="calc-btn btn-orange" style="border-bottom-right-radius: 10px;" onclick="calcInput('=')">=</button>
+        </div>
+    </div>
+
+    <!-- DOCK -->
     <div class="dock-container">
         <div class="dock">
-            <div class="app-icon icon-finder is-open" onclick="toggleWindow('finder')">😊</div>
-            <div class="app-icon icon-safari" onclick="toggleWindow('safari')">🧭</div>
-            <div class="app-icon icon-vscode" onclick="toggleWindow('vscode')">📝</div>
-            <div class="app-icon icon-photos">📸</div>
-            <div class="app-icon" style="background:black; color:white;">🎵</div>
-            <div class="app-icon" style="background:grey;">⚙️</div>
+            <div class="dock-icon" onclick="openWindow('finder', 'Finder')">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c9/Finder_Icon_macOS_Big_Sur.png" alt="Finder">
+                <div class="tooltip">Finder</div>
+            </div>
+            <div class="dock-icon">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_Launchpad_Icon.png" alt="Launchpad">
+                <div class="tooltip">Launchpad</div>
+            </div>
+            <div class="dock-icon" onclick="openWindow('safari', 'Safari')">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/52/Safari_browser_logo.png" alt="Safari">
+                <div class="tooltip">Safari</div>
+            </div>
+            <div class="dock-icon">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/e/ea/Settings_%28macOS%29.png" alt="Settings">
+                <div class="tooltip">Settings</div>
+            </div>
+            <div class="dock-icon" onclick="openWindow('terminal', 'Terminal')">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Terminal_icon_2.png" alt="Terminal">
+                <div class="tooltip">Terminal</div>
+            </div>
+            <div class="dock-icon" onclick="openWindow('calculator', 'Calculator')">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6e/Calculator_icon_macOS_Big_Sur.png" alt="Calculator">
+                <div class="tooltip">Calculator</div>
+            </div>
+            <!-- Trash is usually right aligned, but keeping it simple -->
+            <div style="width:1px; background:rgba(255,255,255,0.2); height:40px; margin:0 5px; align-self:center;"></div>
+            <div class="dock-icon">
+                <img src="https://cdn-icons-png.flaticon.com/512/3616/3616806.png" alt="Trash">
+                <div class="tooltip">Trash</div>
+            </div>
         </div>
     </div>
 
     <script>
-        // --- CLOCK FUNCTIONALITY ---
+        // --- BOOT SEQUENCE ---
+        window.onload = function() {
+            setTimeout(() => {
+                document.getElementById('progress').style.width = '100%';
+            }, 500);
+            setTimeout(() => {
+                document.getElementById('boot-screen').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('boot-screen').style.display = 'none';
+                    // Open default windows
+                    openWindow('finder', 'Finder');
+                }, 1000);
+            }, 3500);
+
+            typeWriterEffect();
+        };
+
+        // --- TYPEWRITER EFFECT FOR TERMINAL ---
+        const txt = 'echo "Welcome to macOS Web Sim"';
+        let i = 0;
+        function typeWriterEffect() {
+            if (i < txt.length) {
+                document.getElementById("typewriter").innerHTML += txt.charAt(i);
+                i++;
+                setTimeout(typeWriterEffect, 100);
+            }
+        }
+
+        // --- CLOCK ---
         function updateClock() {
             const now = new Date();
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             let hours = now.getHours();
-            const minutes = now.getMinutes().toString().padStart(2, '0');
+            let minutes = now.getMinutes();
             const ampm = hours >= 12 ? 'PM' : 'AM';
             hours = hours % 12;
-            hours = hours ? hours : 12; // the hour '0' should be '12'
-            document.getElementById('clock').textContent = `${hours}:${minutes} ${ampm}`;
+            hours = hours ? hours : 12;
+            minutes = minutes < 10 ? '0'+minutes : minutes;
+            
+            const timeString = `${days[now.getDay()]} ${months[now.getMonth()]} ${now.getDate()} ${hours}:${minutes} ${ampm}`;
+            document.getElementById('clock').innerText = timeString;
         }
         setInterval(updateClock, 1000);
         updateClock();
 
-        // --- WINDOW MANAGEMENT (DRAG & Z-INDEX) ---
-        let highestZ = 100;
+        // --- UI TOGGLES ---
+        function toggleDropdown(id) {
+            const el = document.getElementById(id);
+            if(el.classList.contains('show')) el.classList.remove('show');
+            else {
+                closeAllOverlays();
+                el.classList.add('show');
+            }
+        }
 
-        function makeDraggable(elementId, headerId) {
-            const elmnt = document.getElementById(elementId);
-            const header = document.getElementById(headerId);
+        function toggleControl() {
+            const el = document.getElementById('control-panel');
+            if(el.classList.contains('show')) el.classList.remove('show');
+            else {
+                closeAllOverlays();
+                el.classList.add('show');
+            }
+        }
+
+        function closeAllOverlays() {
+            document.querySelectorAll('.dropdown, .control-panel').forEach(el => el.classList.remove('show'));
+        }
+
+        // Click outside to close
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.menubar') && !e.target.closest('.dropdown') && !e.target.closest('.control-panel')) {
+                closeAllOverlays();
+            }
+        });
+
+        // --- WINDOW MANAGER ---
+        let zIndexCounter = 100;
+        let currentApp = 'Finder';
+
+        function openWindow(id, name) {
+            const win = document.getElementById(id);
+            const dockIcon = document.querySelector(`img[alt="${name}"]`).parentNode;
             
+            // Set App Name in Menu
+            document.getElementById('active-app-name').innerText = name;
+            currentApp = name;
+
+            // Animation & State
+            win.classList.remove('minimized');
+            win.classList.add('active');
+            
+            // Focus
+            zIndexCounter++;
+            win.style.zIndex = zIndexCounter;
+
+            // Dock Indicator
+            dockIcon.classList.add('active');
+        }
+
+        function focusWindow(win) {
+            zIndexCounter++;
+            win.style.zIndex = zIndexCounter;
+            
+            // Try to find the app name based on ID (simple mapping)
+            let name = win.id.charAt(0).toUpperCase() + win.id.slice(1);
+            document.getElementById('active-app-name').innerText = name;
+        }
+
+        function closeWindow(id, e) {
+            e.stopPropagation(); // Prevent drag start
+            const win = document.getElementById(id);
+            win.classList.remove('active');
+            win.classList.remove('maximized');
+            
+            // Find name to remove dock dot (simulate quit)
+            let name = id.charAt(0).toUpperCase() + id.slice(1);
+            const dockImg = document.querySelector(`img[alt="${name}"]`);
+            if(dockImg) dockImg.parentNode.classList.remove('active');
+
+            // Revert to Finder
+            document.getElementById('active-app-name').innerText = 'Finder';
+        }
+
+        function minimizeWindow(id, e) {
+            e.stopPropagation();
+            const win = document.getElementById(id);
+            win.classList.add('minimized');
+        }
+
+        function maximizeWindow(id) {
+            const win = document.getElementById(id);
+            win.classList.toggle('maximized');
+        }
+
+        // --- DRAG LOGIC ---
+        function makeDraggable(elmnt) {
             let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-
-            header.onmousedown = dragMouseDown;
-
-            // Bring to front on click
-            elmnt.onmousedown = function() {
-                highestZ++;
-                elmnt.style.zIndex = highestZ;
+            const header = document.getElementById(elmnt.id + "-header");
+            
+            if (header) {
+                header.onmousedown = dragMouseDown;
             }
 
             function dragMouseDown(e) {
+                if(e.target.classList.contains('light')) return; // Don't drag if clicking buttons
+                
                 e = e || window.event;
                 e.preventDefault();
-                // get the mouse cursor position at startup:
+                // Get mouse position
                 pos3 = e.clientX;
                 pos4 = e.clientY;
                 document.onmouseup = closeDragElement;
-                // call a function whenever the cursor moves:
                 document.onmousemove = elementDrag;
+                
+                // Focus window
+                focusWindow(elmnt);
             }
 
             function elementDrag(e) {
                 e = e || window.event;
                 e.preventDefault();
-                // calculate the new cursor position:
+                if(elmnt.classList.contains('maximized')) return; // No drag if fullscreen
+
+                // Calc new position
                 pos1 = pos3 - e.clientX;
                 pos2 = pos4 - e.clientY;
                 pos3 = e.clientX;
                 pos4 = e.clientY;
-                // set the element's new position:
+                
+                // Set position
                 elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
                 elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
             }
 
             function closeDragElement() {
-                // stop moving when mouse button is released:
                 document.onmouseup = null;
                 document.onmousemove = null;
             }
         }
 
-        // Initialize draggables
-        makeDraggable("finder", "finder-header");
-        makeDraggable("safari", "safari-header");
-        makeDraggable("vscode", "vscode-header");
+        // Init Drag
+        ['finder', 'safari', 'terminal', 'calculator'].forEach(id => {
+            makeDraggable(document.getElementById(id));
+        });
 
-        // --- DOCK & WINDOW TOGGLE LOGIC ---
-        function toggleWindow(id) {
-            const win = document.getElementById(id);
-            const dockIcon = document.querySelector(`.icon-${id}`) || document.querySelector(`.icon-${id.split('-')[0]}`); // Simple match
-            
-            if (win.classList.contains('active')) {
-                // If it's active but behind other windows, bring to front
-                if (parseInt(win.style.zIndex) < highestZ) {
-                    highestZ++;
-                    win.style.zIndex = highestZ;
-                } else {
-                    // Minimize if already focused (Optional behavior, currently just brings to front)
-                    // win.classList.remove('active');
-                    
-                    // Let's implement minimize/close visual toggle
-                    win.classList.add('active'); // Keep active for now
-                }
-            } else {
-                // Open window
-                win.classList.add('active');
-                highestZ++;
-                win.style.zIndex = highestZ;
-                
-                // Add dot to dock icon
-                if(dockIcon) dockIcon.classList.add('is-open');
+        // --- CALCULATOR LOGIC ---
+        let calcVal = '0';
+        function calcInput(v) {
+            const display = document.getElementById('calc-res');
+            if(v === 'C') { calcVal = '0'; }
+            else if(v === '=') {
+                try { calcVal = eval(calcVal).toString(); } catch { calcVal = 'Error'; }
             }
-        }
-
-        function closeWindow(id) {
-            const win = document.getElementById(id);
-            win.classList.remove('active');
-            
-            // Remove dot from dock icon if you want the app to "Quit" completely
-            const dockIcon = document.querySelector(`.icon-${id}`);
-            if(dockIcon) dockIcon.classList.remove('is-open');
+            else {
+                if(calcVal === '0') calcVal = v.toString();
+                else calcVal += v.toString();
+            }
+            display.innerText = calcVal;
         }
 
     </script>
