@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>macOS Web Simulator</title>
+<style>
+  /* Reset */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: url('https://wallpaperaccess.com/full/416995.jpg') no-repeat center center fixed;
+    background-size: cover;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Desktop icons */
+  .desktop {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .icon {
+    width: 80px;
+    text-align: center;
+    color: white;
+    font-size: 12px;
+    margin: 10px;
+    cursor: pointer;
+    display: inline-block;
+  }
+
+  .icon img {
+    width: 64px;
+    height: 64px;
+    display: block;
+    margin: 0 auto 5px;
+  }
+
+  /* Dock */
+  .dock {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.3);
+    padding: 10px 20px;
+    border-radius: 20px;
+    display: flex;
+    gap: 15px;
+  }
+
+  .dock img {
+    width: 50px;
+    height: 50px;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+
+  .dock img:hover {
+    transform: scale(1.4);
+  }
+
+  /* Windows */
+  .window {
+    position: absolute;
+    width: 400px;
+    height: 300px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+  }
+
+  .window-header {
+    background: #e0e0e0;
+    padding: 5px 10px;
+    cursor: move;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .window-header .close {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: red;
+    cursor: pointer;
+  }
+
+  .window-header .minimize {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: yellow;
+    cursor: pointer;
+  }
+
+  .window-header .maximize {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: green;
+    cursor: pointer;
+  }
+
+  .window-content {
+    flex: 1;
+    padding: 10px;
+    overflow: auto;
+  }
+</style>
+</head>
+<body>
+  <div class="desktop">
+    <!-- Desktop Icons -->
+    <div class="icon" onclick="openWindow('finder')">
+      <img src="https://img.icons8.com/fluency/48/mac-os.png"/>
+      Finder
+    </div>
+    <div class="icon" onclick="openWindow('notes')">
+      <img src="https://img.icons8.com/fluency/48/notes.png"/>
+      Notes
+    </div>
+
+    <!-- Dock -->
+    <div class="dock">
+      <img src="https://img.icons8.com/fluency/48/mac-os.png" onclick="openWindow('finder')"/>
+      <img src="https://img.icons8.com/fluency/48/notes.png" onclick="openWindow('notes')"/>
+    </div>
+
+    <!-- Windows -->
+    <div class="window" id="finder">
+      <div class="window-header">
+        <div class="close" onclick="closeWindow('finder')"></div>
+        <div class="minimize" onclick="minimizeWindow('finder')"></div>
+        <div class="maximize" onclick="maximizeWindow('finder')"></div>
+        Finder
+      </div>
+      <div class="window-content">
+        <p>Welcome to the Finder app simulation!</p>
+      </div>
+    </div>
+
+    <div class="window" id="notes">
+      <div class="window-header">
+        <div class="close" onclick="closeWindow('notes')"></div>
+        <div class="minimize" onclick="minimizeWindow('notes')"></div>
+        <div class="maximize" onclick="maximizeWindow('notes')"></div>
+        Notes
+      </div>
+      <div class="window-content">
+        <p>Take some notes here...</p>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // Open window
+  function openWindow(id) {
+    const win = document.getElementById(id);
+    win.style.display = "flex";
+    win.style.zIndex = 1000;
+    dragElement(win);
+  }
+
+  // Close window
+  function closeWindow(id) {
+    document.getElementById(id).style.display = "none";
+  }
+
+  // Minimize window
+  function minimizeWindow(id) {
+    document.getElementById(id).style.display = "none";
+  }
+
+  // Maximize window
+  function maximizeWindow(id) {
+    const win = document.getElementById(id);
+    win.style.width = "100%";
+    win.style.height = "100%";
+    win.style.top = "0";
+    win.style.left = "0";
+  }
+
+  // Drag function
+  function dragElement(elmnt) {
+    const header = elmnt.querySelector(".window-header");
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+
+    header.onmousedown = dragMouseDown;
+
+    function dragMouseDown(e) {
+      e = e || window.event;
+      e.preventDefault();
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      document.onmouseup = closeDragElement;
+      document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+      e = e || window.event;
+      e.preventDefault();
+      pos1 = pos3 - e.clientX;
+      pos2 = pos4 - e.clientY;
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+      elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+    }
+
+    function closeDragElement() {
+      document.onmouseup = null;
+      document.onmousemove = null;
+    }
+  }
+</script>
+</body>
+</html>
